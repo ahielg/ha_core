@@ -53,6 +53,9 @@
       "erev_shabbat_hag": {
         "name": "Erev Shabbat/Hag"
       },
+      "is_holiday_tomorrow": {
+        "name": "Is holiday tomorrow"
+      },
       "issur_melacha_in_effect": {
         "name": "Issur Melacha in effect"
       },

@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 import datetime as dt
 
-from hdate.zmanim import Zmanim
+from hdate import HDateInfo, Zmanim
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from homeassistant.util import dt as dt_util
 
+from .coordinator import JewishCalendarUpdateCoordinator
 from .entity import JewishCalendarConfigEntry, JewishCalendarEntity
 
 PARALLEL_UPDATES = 0
@@ -24,26 +25,33 @@ PARALLEL_UPDATES = 0
 class JewishCalendarBinarySensorEntityDescription(BinarySensorEntityDescription):
     """Binary Sensor Entity description for Jewish Calendar."""
 
-    is_on: Callable[[Zmanim], Callable[[dt.datetime], bool]]
+    is_on: Callable[[JewishCalendarUpdateCoordinator], Callable[[dt.datetime], bool]]
 
 
 BINARY_SENSORS: tuple[JewishCalendarBinarySensorEntityDescription, ...] = (
     JewishCalendarBinarySensorEntityDescription(
         key="issur_melacha_in_effect",
         translation_key="issur_melacha_in_effect",
-        is_on=lambda state: state.issur_melacha_in_effect,
+        is_on=lambda coordinator: coordinator.zmanim.issur_melacha_in_effect,
     ),
     JewishCalendarBinarySensorEntityDescription(
         key="erev_shabbat_hag",
         translation_key="erev_shabbat_hag",
-        is_on=lambda state: state.erev_shabbat_chag,
+        is_on=lambda coordinator: coordinator.zmanim.erev_shabbat_chag,
         entity_registry_enabled_default=False,
     ),
     JewishCalendarBinarySensorEntityDescription(
         key="motzei_shabbat_hag",
         translation_key="motzei_shabbat_hag",
-        is_on=lambda state: state.motzei_shabbat_chag,
+        is_on=lambda coordinator: coordinator.zmanim.motzei_shabbat_chag,
         entity_registry_enabled_default=False,
+    ),
+    JewishCalendarBinarySensorEntityDescription(
+        key="is_holiday_tomorrow",
+        translation_key="is_holiday_tomorrow",
+        is_on=lambda coordinator: lambda now: bool(
+            HDateInfo(now.date() + dt.timedelta(days=1), coordinator.data.diaspora).holidays
+        ),
     ),
 )
 
@@ -70,7 +78,7 @@ class JewishCalendarBinarySensor(JewishCalendarEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         """Return true if sensor is on."""
-        return self.entity_description.is_on(self.coordinator.zmanim)(dt_util.now())
+        return self.entity_description.is_on(self.coordinator)(dt_util.now())
 
     def _update_times(self, zmanim: Zmanim) -> list[dt.datetime | None]:
         """Return a list of times to update the sensor."""

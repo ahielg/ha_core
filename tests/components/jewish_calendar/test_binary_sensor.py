@@ -207,3 +207,31 @@ async def test_issur_melacha_sensor_transitions(
     async for expected_state in test_sequence():
         current_state = hass.states.get(sensor_id).state
         assert current_state == expected_state
+
+
+@pytest.mark.parametrize(
+    ("location_data", "test_sequence"),
+    [
+        pytest.param(
+            "Jerusalem",
+            TimeValueSequence(
+                [
+                    TimeValue(dt(2018, 9, 8, 10, 0), STATE_OFF),
+                    TimeValue(dt(2018, 9, 9, 10, 0), STATE_ON),
+                    TimeValue(dt(2018, 9, 10, 10, 0), STATE_ON),
+                    TimeValue(dt(2018, 9, 11, 10, 0), STATE_OFF),
+                ]
+            ),
+            id="rosh_hashana_tomorrow",
+        ),
+    ],
+    indirect=True,
+)
+async def test_tomorrow_holiday_sensor(
+    hass: HomeAssistant, test_sequence: AsyncGenerator[Any]
+) -> None:
+    """Test Tomorrow Holiday sensor output."""
+    sensor_id = "binary_sensor.jewish_calendar_is_holiday_tomorrow"
+    async for expected_state in test_sequence():
+        current_state = hass.states.get(sensor_id).state
+        assert current_state == expected_state
