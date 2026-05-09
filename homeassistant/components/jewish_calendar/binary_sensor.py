@@ -3,8 +3,9 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 import datetime as dt
+from typing import Any
 
-from hdate import HDateInfo, Zmanim
+from hdate import Zmanim
 
 from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
@@ -49,9 +50,7 @@ BINARY_SENSORS: tuple[JewishCalendarBinarySensorEntityDescription, ...] = (
     JewishCalendarBinarySensorEntityDescription(
         key="is_holiday_tomorrow",
         translation_key="is_holiday_tomorrow",
-        is_on=lambda coordinator: lambda now: bool(
-            HDateInfo(now.date() + dt.timedelta(days=1), coordinator.data.diaspora).holidays
-        ),
+        is_on=lambda coordinator: lambda _: coordinator.holiday_tomorrow,
     ),
 )
 
@@ -79,6 +78,13 @@ class JewishCalendarBinarySensor(JewishCalendarEntity, BinarySensorEntity):
     def is_on(self) -> bool:
         """Return true if sensor is on."""
         return self.entity_description.is_on(self.coordinator)(dt_util.now())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return the state attributes."""
+        if self.entity_description.key == "is_holiday_tomorrow":
+            return {"holidays": self.coordinator.holiday_tomorrow_names}
+        return {}
 
     def _update_times(self, zmanim: Zmanim) -> list[dt.datetime | None]:
         """Return a list of times to update the sensor."""

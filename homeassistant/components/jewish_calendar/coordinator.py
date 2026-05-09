@@ -1,6 +1,6 @@
 """Data update coordinator for Jewish calendar."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import datetime as dt
 import logging
 
@@ -31,6 +31,8 @@ class JewishCalendarData:
     havdalah_offset: int
     dateinfo: HDateInfo | None = None
     zmanim: Zmanim | None = None
+    holiday_tomorrow: bool = False
+    holiday_tomorrow_names: list[str] = field(default_factory=list)
 
 
 class JewishCalendarUpdateCoordinator(DataUpdateCoordinator[JewishCalendarData]):
@@ -55,7 +57,9 @@ class JewishCalendarUpdateCoordinator(DataUpdateCoordinator[JewishCalendarData])
         now = dt_util.now()
         _LOGGER.debug("Now: %s Location: %r", now, self.data.location)
         today = now.date()
+        tomorrow = today + dt.timedelta(days=1)
 
+        tomorrow_info = HDateInfo(tomorrow, self.data.diaspora)
         # Create new data object with today's information
         new_data = JewishCalendarData(
             language=self.data.language,
@@ -65,6 +69,8 @@ class JewishCalendarUpdateCoordinator(DataUpdateCoordinator[JewishCalendarData])
             havdalah_offset=self.data.havdalah_offset,
             dateinfo=HDateInfo(today, self.data.diaspora),
             zmanim=self.make_zmanim(today),
+            holiday_tomorrow=bool(tomorrow_info.holidays),
+            holiday_tomorrow_names=[str(h) for h in tomorrow_info.holidays],
         )
 
         # Schedule next update at midnight
@@ -103,3 +109,13 @@ class JewishCalendarUpdateCoordinator(DataUpdateCoordinator[JewishCalendarData])
         """Return the current HDateInfo."""
         assert self.data.dateinfo is not None, "HDateInfo data not available"
         return self.data.dateinfo
+
+    @property
+    def holiday_tomorrow(self) -> bool:
+        """Return True if tomorrow is a holiday."""
+        return self.data.holiday_tomorrow
+
+    @property
+    def holiday_tomorrow_names(self) -> list[str]:
+        """Return the names of tomorrow's holidays."""
+        return self.data.holiday_tomorrow_names
