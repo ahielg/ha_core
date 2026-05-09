@@ -77,7 +77,10 @@ class JewishCalendarBinarySensor(JewishCalendarEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         """Return true if sensor is on."""
-        return self.entity_description.is_on(self.coordinator)(dt_util.now())
+        value = self.entity_description.is_on(self.coordinator)
+        if callable(value):
+            return value(dt_util.now())
+        return value
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

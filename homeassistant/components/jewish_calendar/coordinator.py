@@ -56,10 +56,11 @@ class JewishCalendarUpdateCoordinator(DataUpdateCoordinator[JewishCalendarData])
         """Return HDate and Zmanim for today."""
         now = dt_util.now()
         _LOGGER.debug("Now: %s Location: %r", now, self.data.location)
-        today = now.date()
-        tomorrow = today + dt.timedelta(days=1)
 
-        tomorrow_info = HDateInfo(tomorrow, self.data.diaspora)
+        today = now.date()
+        current_hdate = HDateInfo(now, self.data.diaspora)
+        tomorrow_date = current_hdate.date + dt.timedelta(days=1)
+        tomorrow_info = HDateInfo(tomorrow_date, self.data.diaspora)
         # Create new data object with today's information
         new_data = JewishCalendarData(
             language=self.data.language,
@@ -67,9 +68,9 @@ class JewishCalendarUpdateCoordinator(DataUpdateCoordinator[JewishCalendarData])
             location=self.data.location,
             candle_lighting_offset=self.data.candle_lighting_offset,
             havdalah_offset=self.data.havdalah_offset,
-            dateinfo=HDateInfo(today, self.data.diaspora),
+            dateinfo=current_hdate,
             zmanim=self.make_zmanim(today),
-            holiday_tomorrow=bool(tomorrow_info.holidays),
+            holiday_tomorrow=tomorrow_info.is_yom_tov,
             holiday_tomorrow_names=[str(h) for h in tomorrow_info.holidays],
         )
 
